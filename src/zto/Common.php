@@ -121,9 +121,7 @@ abstract class Common
 
         $response = $httpClient->request($this->method(), $this->api(), $options);
 
-//        var_dump($response->getStatusCode());
-//        var_dump($response->getBody()->getContents());
-
+        // TODO 解析结果，形成固定格式
         print_r(json_decode($response->getBody()->getContents(), true));
 
     }
