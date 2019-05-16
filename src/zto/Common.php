@@ -3,6 +3,9 @@
 namespace ruoge3s\express\zto;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\Response;
+use ruoge3s\express\Attribute;
+use ruoge3s\express\Config;
 
 /**
  * Class Common
@@ -13,6 +16,9 @@ use GuzzleHttp\Client;
  */
 abstract class Common
 {
+    use Config;
+    use Attribute;
+
     protected $host = 'http://japi.zto.cn';
 
     abstract public function api() : string ;
@@ -30,99 +36,144 @@ abstract class Common
      */
     protected $key;
 
-    protected $headers = [
-        'ContentType'   => 'Content-type: application/x-www-form-urlencoded; charset=utf-8',
+    /**
+     * @var array 参考guzzlehttp/guzzle的文档
+     */
+    protected $option = [
+        'headers' => [
+            'ContentType'   => 'Content-type: application/x-www-form-urlencoded; charset=utf-8',
+        ]
     ];
 
-    public function __construct($config=[])
-    {
-        foreach ($config as $property => $value) {
-            $this->$property = $value;
-        }
-    }
+    /**
+     * @var Response http请求响应的对象
+     */
+    protected $response;
 
+    /**
+     * @return array 获取请求头信息
+     */
     public function getHeaders()
     {
-        return $this->headers;
+        return $this->option['headers'];
     }
 
-    public function setHeader($key, $value)
+    /**
+     * 设置请求头信息
+     * @param string $key 请求头名称
+     * @param string $value 请求头内容
+     * @return $this
+     */
+    public function setHeader(string $key, string $value)
     {
-        $this->headers[$key] = $value;
+        $this->option['headers'][$key] = $value;
         return $this;
     }
 
+    /**
+     * 设置post的参数
+     * @param array $fp
+     * @return $this
+     */
+    public function setFormParams(array $fp)
+    {
+        $this->option['form_params'] = $fp;
+        return $this;
+    }
+
+    /**
+     * 获取post的参数
+     * @return array|null
+     */
+    public function getFormParams()
+    {
+        if (isset($this->option['form_params'])) {
+            return $this->option['form_params'];
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * 设置公司ID
+     * @param string $cid
+     * @return $this
+     */
     public function setCompanyId(string $cid)
     {
-        $this->headers['x-companyId'] = $cid;
+        $this->option['headers']['x-companyId'] = $cid;
         return $this;
     }
 
+    /**
+     * 获取公司ID
+     * @return null
+     */
     public function getCompanyId()
     {
-        if (isset($this->headers['x-companyId'])) {
-            return $this->headers['x-companyId'];
+        if (isset($this->option['headers']['x-companyId'])) {
+            return $this->option['headers']['x-companyId'];
         } else {
             return null;
         }
     }
 
+    /**
+     * 设置数字签名信息
+     * @param string $dd
+     * @return $this
+     */
     public function setDataDigest(string $dd)
     {
-        $this->headers['x-dataDigest'] = $dd;
+        $this->option['headers']['x-dataDigest'] = $dd;
         return $this;
     }
 
+    /**
+     * 获取数字签名信息
+     * @return string|null
+     */
     public function getDataDigest()
     {
-        if (isset($this->headers['x-dataDigest'])) {
-            return $this->headers['x-dataDigest'];
+        if (isset($this->option['headers']['x-dataDigest'])) {
+            return $this->option['headers']['x-dataDigest'];
         } else {
             return null;
         }
     }
 
     /**
-     * @param $name
-     * @param $value
-     * @return mixed
-     * @throws \Exception
+     * 发起请求
+     * @return array|false|null
+     * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function __set($name, $value)
-    {
-        $methodName = 'set' . ucfirst($name);
-        if (method_exists($this, $methodName)) {
-            return $this->$methodName($value);
-        } else {
-            throw new \Exception("{$name} cannot be set!");
-        }
-    }
-
-    /**
-     * @param $name
-     * @return mixed
-     * @throws \Exception
-     */
-    public function __get($name)
-    {
-        $methodName = 'get' . ucfirst($name);
-        if (method_exists($this, $methodName)) {
-            return $this->$methodName();
-        } else {
-            throw new \Exception("{$name} cannot be read!");
-        }
-    }
-
-    protected function request($options=[])
+    protected function request()
     {
         $httpClient = new Client([
             'base_uri'  => $this->host,
+            'timeout'   => 5,
         ]);
+        $this->setDataDigest($this->signature());
+        $this->response = $httpClient->request($this->method(), $this->api(), $this->option);
 
-        $response = $httpClient->request($this->method(), $this->api(), $options);
+        if ($this->response->getStatusCode() == 200) {
+            return json_decode($this->response->getBody()->getContents(), true);
+        } else {
+            return null;
+        }
+    }
 
-        // TODO 解析结果，形成固定格式
-        print_r(json_decode($response->getBody()->getContents(), true));
-
+    /**
+     * 签名
+     * @return string
+     */
+    public function signature()
+    {
+        $sign = '';
+        foreach ($this->getFormParams() as $k => $v) {
+            $sign = $sign . $k . '=' . $v . '&';
+        }
+        $sign = substr($sign, 0, -1) . $this->key;
+        return base64_encode(md5($sign, TRUE));
     }
 }

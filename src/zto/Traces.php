@@ -2,6 +2,9 @@
 
 namespace ruoge3s\express\zto;
 
+use ruoge3s\express\Logistics;
+use ruoge3s\express\Node;
+
 /**
  * Class zto
  * 中通快递开放平台-快件轨迹
@@ -9,34 +12,41 @@ namespace ruoge3s\express\zto;
  */
 class Traces extends Common
 {
+    /**
+     * @return string 定义接口
+     */
     public function api(): string
     {
         return '/traceInterfaceNewTraces';
     }
 
-
-    // 获取快件轨迹信息
-    public function news()
+    /**
+     * 获取快件轨迹信息
+     * @param array $NOs
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     * @return Logistics[]
+     */
+    public function news(array $NOs)
     {
-        $data = [
+        $res = $this->setFormParams([
             'company_id'    => $this->companyId,
             'msg_type'      => 'NEW_TRACES',
-            'data'          => json_encode([
-                '75141846796460'
-            ]),
-        ];
-        $digestStr = '';
-        foreach ($data as $k => $v) {
-            $digestStr = $digestStr . $k . '=' . $v . '&';
+            'data'          => json_encode($NOs),
+        ])->request();
+        $data = [];
+        if (isset($res['data']) && is_array($res['data'])) {
+            foreach ($res['data'] as $one) {
+                $l = new Logistics(['no' => $one['billCode']]);
+                foreach ($one['traces'] as $node) {
+                    $l->addNode(new Node([
+                        'content'   => $node['desc'],
+                        'time'      => $node['scanDate'],
+                        'site'      => "{$node['scanProv']}/{$node['scanCity']}/{$node['scanSite']}"
+                    ]));
+                }
+                $data[$one['billCode']] = $l;
+            }
         }
-        $digestStr = substr($digestStr, 0, -1) . $this->key;
-
-        $data_digest = base64_encode(md5($digestStr, TRUE));
-        $this->dataDigest = $data_digest;
-
-        $this->request([
-            'headers'       => $this->headers,
-            'form_params'   => $data
-        ]);
+        return $data;
     }
 }
