@@ -33,6 +33,9 @@ class Traces extends Common
             'msg_type'      => 'NEW_TRACES',
             'data'          => json_encode($NOs),
         ])->request();
+
+        // TODO 接口响应错误码进行处理
+
         $data = [];
         if (isset($res['data']) && is_array($res['data'])) {
             foreach ($res['data'] as $one) {
