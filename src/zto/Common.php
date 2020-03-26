@@ -147,11 +147,11 @@ abstract class Common
      * @return array|false|null
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    protected function request()
+    public function request()
     {
         $httpClient = new Client([
             'base_uri'  => $this->host,
-            'timeout'   => 5,
+            'timeout'   => 50,
         ]);
         $this->setDataDigest($this->signature());
         $this->response = $httpClient->request($this->method(), $this->api(), $this->option);
