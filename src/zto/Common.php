@@ -19,6 +19,8 @@ abstract class Common
     use Config;
     use Attribute;
 
+    public $timeout = 100;
+
     protected $host = 'http://japi.zto.cn';
 
     abstract public function api() : string ;
@@ -151,7 +153,7 @@ abstract class Common
     {
         $httpClient = new Client([
             'base_uri'  => $this->host,
-            'timeout'   => 50,
+            'timeout'   => $this->timeout,
         ]);
         $this->setDataDigest($this->signature());
         $this->response = $httpClient->request($this->method(), $this->api(), $this->option);

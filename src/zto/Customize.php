@@ -7,6 +7,8 @@ class Customize extends Common
 {
     public $api = '';
 
+    public $method = '';
+
     /**
      * @return string
      * @throws \Exception
@@ -24,6 +26,17 @@ class Customize extends Common
     {
         $this->api = $api;
         return $this;
+    }
+
+    public function setMethod(string $method)
+    {
+        $this->method = $method;
+        return $this;
+    }
+
+    public function method(): string
+    {
+        return $this->method;
     }
 
     public function setFormParams(array $fp)

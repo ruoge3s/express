@@ -20,7 +20,7 @@ $customize = new \ruoge3s\express\zto\Customize([
     'key'       => '中通授权的秘钥key',
 ]);
 
-$res = $customize->setApi('根据文档查询api')->setFormParams([
+$res = $customize->setApi('根据文档查询对应的api')->setFormParams([
     'data'      => json_encode(['73127sss904pp快递单号', '73127sss904pp快递单号', '73127sss904pp快递单号']),
     // 'content'   => json_encode([]),
     // ... 根据文档中要求的接口数据进行填写, 数组格式的都要json
